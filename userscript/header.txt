@@ -1,0 +1,18 @@
+// ==UserScript==
+// @name         TabIndex Editor
+// @namespace    https://github.com/squivix/tabindex-editor
+// @version      0.1.0
+// @description  Edit and override the keyboard tab order of any web page. Pick elements, number them your way, and the order is saved per page or per site. Toggle with Alt+Shift+K.
+// @author       squivix
+// @license      MIT
+// @homepageURL  https://github.com/squivix/tabindex-editor
+// @supportURL   https://github.com/squivix/tabindex-editor/issues
+// @match        *://*/*
+// @grant        GM.getValue
+// @grant        GM.setValue
+// @grant        GM.deleteValue
+// @grant        GM_registerMenuCommand
+// @run-at       document-idle
+// @noframes
+// ==/UserScript==
+

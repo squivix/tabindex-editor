@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>TabIndex Editor — test harness</title>
+<style>
+  body { font: 15px/1.6 system-ui, sans-serif; margin: 0; padding: 24px; background: #f3f4f6; color: #111827; }
+  .col { max-width: 640px; margin: 0 auto; }
+  .card { background: #fff; border-radius: 10px; padding: 18px 22px; margin-bottom: 16px; box-shadow: 0 1px 3px rgba(0,0,0,.1); }
+  h1 { font-size: 20px; }
+  h2 { font-size: 15px; margin: 0 0 10px; }
+  input, select, textarea, button { font: inherit; padding: 6px 10px; margin: 4px 6px 4px 0; }
+  .harness { background: #eef2ff; border: 1px solid #c7d2fe; }
+  nav a { margin-right: 14px; }
+  .note { color: #6b7280; font-size: 13px; }
+</style>
+</head>
+<body>
+<div class="col">
+  <div class="card harness">
+    <h2>Harness controls (not part of the fake site)</h2>
+    <button id="h-toggle">Toggle edit mode (Alt+Shift+K)</button>
+    <button id="h-rerender">Simulate SPA re-render</button>
+    <button id="h-wipe">Wipe saved rules</button>
+    <div class="note" id="h-status">–</div>
+  </div>
+
+  <div class="card">
+    <h1>Fake newsletter signup</h1>
+    <nav>
+      <a href="#a" id="nav-home">Home</a>
+      <a href="#b" id="nav-pricing">Pricing</a>
+      <a href="#c" id="nav-blog">Blog</a>
+      <a href="#d" id="nav-login">Log in</a>
+    </nav>
+  </div>
+
+  <div class="card" id="form-card">
+    <h2>Sign up (deliberately bad tab order)</h2>
+    <!-- The site put a tabindex trap: cookie button first, submit before inputs -->
+    <button tabindex="1" id="cookie-btn">Accept cookies</button><br>
+    <label>Email <input type="email" id="email" placeholder="you@example.com"></label><br>
+    <button tabindex="2" id="submit-btn">Subscribe</button><br>
+    <label>Name <input type="text" id="name" placeholder="Your name"></label><br>
+    <label>Country
+      <select id="country"><option>Portugal</option><option>Brazil</option></select>
+    </label><br>
+    <label><input type="checkbox" id="tos"> I agree to the terms</label>
+  </div>
+
+  <div class="card">
+    <h2>Footer junk</h2>
+    <a href="#x" id="f-twitter">Twitter</a>
+    <a href="#y" id="f-imprint">Imprint</a>
+    <a href="#z" id="f-rss">RSS</a>
+  </div>
+</div>
+
+<script src="../extension/core.js"></script>
+<script>
+  // Pristine markup snapshot, taken before the editor applies anything —
+  // a real framework re-render recreates elements from its own templates,
+  // without whatever attributes the editor set on the live DOM.
+  const pristineFormHTML = document.getElementById('form-card').innerHTML;
+
+  const storage = {
+    async get(k) { const v = localStorage.getItem(k); return v ? JSON.parse(v) : null; },
+    async set(k, v) { localStorage.setItem(k, JSON.stringify(v)); },
+    async remove(k) { localStorage.removeItem(k); },
+  };
+  const editor = globalThis.__TabIndexEditorCore(storage);
+  editor.init();
+
+  window.addEventListener('keydown', (e) => {
+    if (e.altKey && e.shiftKey && e.code === 'KeyK') { e.preventDefault(); editor.toggleEditMode(); }
+  }, true);
+
+  const status = async () => {
+    const s = await editor.getStatus();
+    document.getElementById('h-status').textContent =
+      `editing=${s.editing} pageRules=${s.pageCount} siteRules=${s.siteCount}`;
+  };
+  document.getElementById('h-toggle').addEventListener('click', () => { editor.toggleEditMode(); setTimeout(status, 200); });
+  document.getElementById('h-wipe').addEventListener('click', async () => { await editor.clearRules('all'); status(); });
+  document.getElementById('h-rerender').addEventListener('click', () => {
+    // Destroys and recreates all form elements from the pristine template,
+    // like a framework re-render.
+    document.getElementById('form-card').innerHTML = pristineFormHTML;
+    setTimeout(status, 600);
+  });
+  setInterval(status, 1000);
+  status();
+</script>
+</body>
+</html>

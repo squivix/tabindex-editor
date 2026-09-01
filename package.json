@@ -1,0 +1,16 @@
+{
+  "name": "tabindex-editor",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Edit and override the keyboard tab order of any web page (browser extension + userscript).",
+  "license": "MIT",
+  "repository": { "type": "git", "url": "https://github.com/squivix/tabindex-editor.git" },
+  "scripts": {
+    "test": "node --test 'test/**/*.test.js'",
+    "build": "./build.sh"
+  },
+  "devDependencies": {
+    "jsdom": "^26.0.0"
+  }
+}
