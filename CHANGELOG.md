@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.2.0 — 2026-09-01
 
 - The edit-mode panel can be moved: `M` cycles it through the four corners and
   its title bar drags it anywhere. It used to sit fixed in the top-right corner,

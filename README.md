@@ -1,5 +1,7 @@
 # TabIndex Editor
 
+[![CI](https://github.com/squivix/tabindex-editor/actions/workflows/ci.yml/badge.svg)](https://github.com/squivix/tabindex-editor/actions/workflows/ci.yml)
+
 Edit and override the keyboard tab order of any web page — pick elements, number
 them in the order **you** want, skip the ones you never use, and the override is
 saved per page (or per site) and reapplied automatically on every visit.
@@ -118,6 +120,19 @@ manual pass that covers the rest.
 
 Start with [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) before changing
 `core.js`; the interesting parts are element identity and the restore map.
+
+### Cutting a release
+
+1. Bump the version in `package.json`, `extension/manifest.json` and
+   `userscript/header.txt` — the packaging test fails if they disagree.
+2. Turn the `Unreleased` heading in [CHANGELOG.md](CHANGELOG.md) into the new
+   version and date.
+3. `git tag vX.Y.Z && git push origin vX.Y.Z`.
+
+The [release workflow](.github/workflows/release.yml) checks the tag matches the
+version, runs the tests, builds, and publishes the release with both artifacts
+attached and notes taken from the changelog entry. Every push and pull request
+runs the suite on Node 22 and 24 via the [CI workflow](.github/workflows/ci.yml).
 
 ## Known limitations / roadmap
 

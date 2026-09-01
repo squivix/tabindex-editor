@@ -1,0 +1,48 @@
+name: Release
+
+# Cutting a release is: bump the version, write the changelog entry, push a tag.
+# Everything below is what used to be done by hand.
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write   # only this job may write; the repo default stays read-only
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+
+      - name: The tag must match the version being shipped
+        run: |
+          tag="${GITHUB_REF_NAME#v}"
+          pkg="$(node -p "JSON.parse(require('fs').readFileSync('package.json','utf8')).version")"
+          if [ "$tag" != "$pkg" ]; then
+            echo "::error::tag $GITHUB_REF_NAME does not match package.json version $pkg"
+            exit 1
+          fi
+
+      # Among other things this asserts manifest.json and the userscript header
+      # carry the same version, and that build.sh output parses.
+      - run: npm test
+
+      - run: ./build.sh
+      - name: Collect the release notes
+        run: tools/release-notes.sh "${GITHUB_REF_NAME#v}" > /tmp/notes.md
+
+      - name: Publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" \
+            --title "TabIndex Editor ${GITHUB_REF_NAME#v}" \
+            --notes-file /tmp/notes.md \
+            dist/tabindex-editor.user.js \
+            dist/tabindex-editor-extension.zip
