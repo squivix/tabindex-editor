@@ -1,23 +1,37 @@
 # Publishing to addons.mozilla.org
 
-`./build.sh` produces **`dist/tabindex-editor-firefox.zip`** — that is the file
-to upload. It is the same code as the generic build with
-`background.service_worker` removed, because Firefox ignores that key and the
-AMO linter flags it.
+`./build.sh` produces **`dist/tabindex-editor-extension.zip`** — that is the
+file to upload, and it goes to Chrome too. Every file inside it is the file in
+`extension/`, byte for byte.
 
 Check it before every submission:
 
 ```bash
 ./build.sh
-npx web-ext lint --source-dir dist/firefox
+npx web-ext lint --source-dir extension
 ```
 
-Zero errors is the bar. Two warnings are expected and harmless: they say
-`data_collection_permissions` needs Firefox 140, while we declare support back
-to 109. Older Firefox ignores manifest keys it does not know, and we keep the
-lower floor so people on older builds can still install. To trade that reach for
-a spotless report, raise `strict_min_version` to `"140.0"` in
-`extension/manifest.json`.
+Zero errors is the bar. Three warnings are expected and harmless:
+
+- `BACKGROUND_SERVICE_WORKER_IGNORED` — the manifest carries both
+  `background.service_worker` (Chrome) and `background.scripts` (Firefox). Each
+  browser reads its own key and ignores the other. Stripping it for Firefox
+  would make the submitted files differ from the source and trigger Mozilla's
+  source-code submission requirement, which is a far worse trade.
+- Two `KEY_FIREFOX_*_UNSUPPORTED_BY_MIN_VERSION` — `data_collection_permissions`
+  needs Firefox 140 while we declare support back to 109. Older Firefox ignores
+  keys it does not know, and the lower floor keeps people on older builds able
+  to install. Raise `strict_min_version` to `"140.0"` if you would rather have a
+  spotless report than that reach.
+
+### The source-code questions
+
+AMO asks whether you use code generators, minifiers, bundlers, template engines,
+or anything else that processes files into what ships. The answer is **no** to
+all of them, so no source upload is required. `build.sh` only zips a directory
+and concatenates the (separate) userscript build; nothing that goes into the
+extension is generated or rewritten. A packaging test enforces this by comparing
+the manifest inside the zip against the one in the repository.
 
 ## What only you can do
 

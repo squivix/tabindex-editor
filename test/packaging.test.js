@@ -38,14 +38,13 @@ test('it declares to Firefox that it collects nothing', () => {
     { required: ['none'] }, 'AMO requires this key on new extensions');
 });
 
-test('the Firefox build drops the key Firefox cannot use', () => {
+test('the shipped zip is the repo files, unmodified', () => {
+  // AMO asks whether anything generates or rewrites files that go into the
+  // extension. Keeping the answer "no" is worth a test.
   execFileSync(path.join(ROOT, 'build.sh'), { cwd: ROOT, stdio: 'pipe' });
-  const ff = JSON.parse(read('dist', 'firefox', 'manifest.json'));
-  assert.equal(ff.background.service_worker, undefined, 'Firefox ignores it and the AMO linter flags it');
-  assert.deepEqual(ff.background.scripts, ['background.js'], 'the event page is what Firefox runs');
-  assert.equal(ff.version, manifest.version);
-  assert.deepEqual(ff.browser_specific_settings, manifest.browser_specific_settings);
-  assert.ok(fs.existsSync(path.join(ROOT, 'dist', 'tabindex-editor-firefox.zip')));
+  const listing = execFileSync('unzip', ['-p', path.join(ROOT, 'dist', 'tabindex-editor-extension.zip'), 'manifest.json']);
+  assert.equal(listing.toString(), read('extension', 'manifest.json'),
+    'the manifest in the zip must be the manifest in the repo');
 });
 
 test('the keyboard shortcut is registered', () => {

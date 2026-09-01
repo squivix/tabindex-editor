@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.3.2 — 2026-09-01
+
+- One extension zip again, for both stores, containing the repository's files
+  unchanged. 0.3.1 generated a separate Firefox manifest with
+  `background.service_worker` removed; that made the submitted files differ from
+  the source, which is exactly what triggers Mozilla's source-code submission
+  requirement — a poor trade for silencing one advisory warning about a key
+  Firefox ignores anyway.
+
 ## 0.3.1 — 2026-09-01
 
 - Declare `data_collection_permissions: none` for Firefox, which

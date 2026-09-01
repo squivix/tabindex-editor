@@ -47,8 +47,7 @@ jobs:
             --title "TabIndex Editor ${GITHUB_REF_NAME#v}" \
             --notes-file /tmp/notes.md \
             dist/tabindex-editor.user.js \
-            dist/tabindex-editor-extension.zip \
-            dist/tabindex-editor-firefox.zip
+            dist/tabindex-editor-extension.zip
 
       # Only runs once AMO credentials exist as repository secrets. Setting them
       # means every tag from then on is submitted to Mozilla for review; the
@@ -59,5 +58,5 @@ jobs:
         env:
           AMO_JWT_SECRET: ${{ secrets.AMO_JWT_SECRET }}
         run: |
-          npx --yes web-ext sign --source-dir dist/firefox --channel listed \
+          npx --yes web-ext sign --source-dir extension --channel listed \
             --api-key "$AMO_JWT_ISSUER" --api-secret "$AMO_JWT_SECRET"
