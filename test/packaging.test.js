@@ -33,6 +33,21 @@ test('it asks for no more permissions than it needs', () => {
   assert.equal(manifest.host_permissions, undefined, 'the content script match is enough');
 });
 
+test('it declares to Firefox that it collects nothing', () => {
+  assert.deepEqual(manifest.browser_specific_settings.gecko.data_collection_permissions,
+    { required: ['none'] }, 'AMO requires this key on new extensions');
+});
+
+test('the Firefox build drops the key Firefox cannot use', () => {
+  execFileSync(path.join(ROOT, 'build.sh'), { cwd: ROOT, stdio: 'pipe' });
+  const ff = JSON.parse(read('dist', 'firefox', 'manifest.json'));
+  assert.equal(ff.background.service_worker, undefined, 'Firefox ignores it and the AMO linter flags it');
+  assert.deepEqual(ff.background.scripts, ['background.js'], 'the event page is what Firefox runs');
+  assert.equal(ff.version, manifest.version);
+  assert.deepEqual(ff.browser_specific_settings, manifest.browser_specific_settings);
+  assert.ok(fs.existsSync(path.join(ROOT, 'dist', 'tabindex-editor-firefox.zip')));
+});
+
 test('the keyboard shortcut is registered', () => {
   const cmd = manifest.commands['toggle-edit-mode'];
   assert.equal(cmd.suggested_key.default, 'Alt+Shift+K');

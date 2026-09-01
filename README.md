@@ -13,7 +13,8 @@ Ships in two forms from one shared core:
 - **Userscript** (Tampermonkey/Violentmonkey/Greasemonkey, Greasyfork-ready) — built to `dist/tabindex-editor.user.js`
 
 Docs: [architecture](docs/ARCHITECTURE.md) · [testing](docs/TESTING.md) ·
-[privacy](docs/PRIVACY.md) · [changelog](CHANGELOG.md)
+[privacy](docs/PRIVACY.md) · [publishing](docs/PUBLISHING.md) ·
+[changelog](CHANGELOG.md)
 
 ## Install
 

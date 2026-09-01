@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.3.1 — 2026-09-01
+
+- Declare `data_collection_permissions: none` for Firefox, which
+  addons.mozilla.org requires of new extensions — the extension collects
+  nothing, and now says so in the manifest.
+- `build.sh` also produces `dist/tabindex-editor-firefox.zip`, the same build
+  without `background.service_worker`: Firefox ignores that key and the AMO
+  linter flags it. See [docs/PUBLISHING.md](docs/PUBLISHING.md).
+
 ## 0.3.0 — 2026-09-01
 
 - The first `Tab` press on a page with rules now goes to your first pick,
