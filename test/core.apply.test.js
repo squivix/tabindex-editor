@@ -49,6 +49,44 @@ test('a broken selector resolves to nothing when the label does not match either
   env.close();
 });
 
+test('a selector matching several elements picks the one that fingerprints', async () => {
+  // 'a' matches every link on the page; only one of them is Pricing.
+  const loose = entry('a', 'order', { tag: 'a', label: 'Pricing' });
+  const env = await started(withPageRules([loose]));
+  assert.deepEqual(env.tabindexMap('#nav-home', '#nav-pricing'), { '#nav-home': null, '#nav-pricing': '1' });
+  env.close();
+});
+
+test('a hidden match is passed over for the visible one', async () => {
+  const html = `
+    <a href="#a" id="ghost" style="display:none">Docs</a>
+    <a href="#b" id="real">Docs</a>`;
+  const storage = memoryStorage({
+    [ORIGIN_KEY]: originData({ pages: { [PAGE_PATH]: [entry('a', 'order', { tag: 'a', label: 'Docs' })] } }),
+  });
+  const env = createPage({ html, storage });
+  env.editor.init();
+  await env.settle();
+  // A hidden element is skipped by the browser's focus order, so numbering it
+  // would silently drop that step out of the sequence.
+  assert.deepEqual(env.tabindexMap('#ghost', '#real'), { '#ghost': null, '#real': '1' });
+  env.close();
+});
+
+test('an element that is hidden right now still keeps its place', async () => {
+  const html = `
+    <a href="#a" id="menu-item" style="display:none">Settings</a>
+    <a href="#b" id="other">Other</a>`;
+  const storage = memoryStorage({
+    [ORIGIN_KEY]: originData({ pages: { [PAGE_PATH]: [entry('#menu-item', 'order', { tag: 'a', label: 'Settings' })] } }),
+  });
+  const env = createPage({ html, storage });
+  env.editor.init();
+  await env.settle();
+  assert.equal(env.tabindex('#menu-item'), '1', 'a collapsed menu item is still yours to order');
+  env.close();
+});
+
 test('page rules take precedence over site rules', async () => {
   const storage = memoryStorage({
     [ORIGIN_KEY]: originData({ site: [SUBMIT], pages: { [PAGE_PATH]: [EMAIL] } }),

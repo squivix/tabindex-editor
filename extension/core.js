@@ -96,7 +96,12 @@
     const escAttr = (s) => s.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
 
     function stableId(id) {
-      return /^[A-Za-z][\w-]{0,63}$/.test(id) && !/\d{3,}/.test(id);
+      if (!/^[A-Za-z][\w-]{0,63}$/.test(id)) return false;
+      if (/\d{3,}/.test(id)) return false;                             // ember-4821
+      // Short letter/digit soup with no word separator — "ti6dpd", "a1b2c3" —
+      // is almost always generated per page load.
+      if (/\d/.test(id) && !/[-_]/.test(id) && id.length <= 10) return false;
+      return true;
     }
 
     // A short human-readable label, used as the fuzzy fallback fingerprint.
@@ -147,6 +152,10 @@
         parts.unshift(seg);
         node = node.parentElement;
       }
+      // Anchor at <body> when we actually walked all the way up. If the loop
+      // stopped at the depth limit instead, the path is partial and has to stay
+      // a descendant match.
+      if (node === document.body) parts.unshift('body');
       const sel = parts.join(' > ');
       let idx = 0;
       try { idx = Math.max(0, Array.from(document.querySelectorAll(sel)).indexOf(el)); } catch {}
@@ -158,18 +167,39 @@
       return { sel, idx, action, alt: { tag: el.localName, label: labelOf(el) } };
     }
 
+    // Does this element still look like the one that was picked? A tag match
+    // alone is far too weak: on a re-rendered page it happily accepts a
+    // completely different link, and the rule lands on the wrong element.
+    function fingerprintOk(el, alt) {
+      if (!alt) return true;
+      if (alt.tag && el.localName !== alt.tag) return false;
+      if (!alt.label) return true;
+      return labelOf(el) === alt.label;
+    }
+
     function resolveEntry(entry) {
+      let matches = [];
       try {
         const list = document.querySelectorAll(entry.sel);
-        const el = list[entry.idx] || list[0];
-        if (el && (!entry.alt || el.localName === entry.alt.tag)) return el;
+        const first = list[entry.idx] || list[0];
+        // The recorded index first, then any other match — an entry saved when
+        // the page had one layout can still be repaired on a page with another.
+        matches = first ? [first, ...Array.from(list).filter(el => el !== first)] : Array.from(list);
       } catch {}
-      // Fuzzy fallback: same tag + same accessible label.
+
+      // Best: the selector matches something that still fingerprints and is
+      // actually on screen. A hidden match would be skipped by the browser's
+      // focus order anyway, silently dropping the element from your sequence.
+      for (const el of matches) if (fingerprintOk(el, entry.alt) && isVisible(el)) return el;
+      // Next: same tag and label anywhere on the page (the site moved it).
       if (entry.alt && entry.alt.label) {
         for (const el of document.querySelectorAll(entry.alt.tag || '*')) {
           if (labelOf(el) === entry.alt.label && isVisible(el)) return el;
         }
       }
+      // Last: a fingerprinting match that is currently hidden — a collapsed
+      // menu item, say. Better to keep its place in the order than lose it.
+      for (const el of matches) if (fingerprintOk(el, entry.alt)) return el;
       return null;
     }
 

@@ -16,6 +16,10 @@ const PAGE = `
     </ul>
     <div><button>Plain</button></div>
   </div>
+  <footer>
+    <button>Top level</button>
+    <a id="ti6dpd" href="#gen">Generated id</a>
+  </footer>
 `;
 
 /** Picks the given elements in edit mode and returns the stored entries. */
@@ -49,6 +53,19 @@ test('prefers a stable id, then data-testid / name / aria-label, then a structur
     '#menu > li:nth-of-type(2) > a',  // structural path, anchored at the nearest stable id
     '#wrap > div > button',
   ]);
+});
+
+test('a path with no stable ancestor is anchored at body, not left floating', async () => {
+  const [entry] = await pick(memoryStorage(), ['footer > button']);
+  assert.equal(entry.sel, 'body > footer > button');
+  // Unanchored, this would match that shape anywhere in the document.
+  assert.ok(entry.sel.startsWith('body >'), 'anchored');
+});
+
+test('an id that looks generated per page load is not trusted', async () => {
+  const [entry] = await pick(memoryStorage(), ['#ti6dpd']);
+  assert.notEqual(entry.sel, '#ti6dpd', 'Google hands out ids like this and changes them every load');
+  assert.equal(entry.sel, 'body > footer > a');
 });
 
 test('a stored selector still resolves to the same element on the next visit', async () => {

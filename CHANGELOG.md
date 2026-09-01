@@ -1,5 +1,23 @@
 # Changelog
 
+## 0.2.1 — 2026-09-01
+
+Fixes for rules landing on the wrong element after a page re-renders, found
+while investigating a report of the order breaking on google.com.
+
+- A stored selector is now checked against the picked element's fingerprint
+  (tag and accessible label) before it is trusted. A tag match alone would
+  accept a completely different link on a re-rendered page.
+- When several elements match, a visible one that fingerprints wins. Numbering
+  a hidden element used to silently drop that step from the sequence, because
+  the browser skips it.
+- Structural selectors are anchored at `body`. Without that, a path like
+  `div:nth-of-type(2) > a:nth-of-type(1)` matched that shape anywhere in the
+  document.
+- Ids that look generated per page load (`ti6dpd`) are no longer treated as
+  stable. Google's home page hands out exactly these and changes them on every
+  visit.
+
 ## 0.2.0 — 2026-09-01
 
 - The edit-mode panel can be moved: `M` cycles it through the four corners and

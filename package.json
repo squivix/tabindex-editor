@@ -1,6 +1,6 @@
 {
   "name": "tabindex-editor",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "private": true,
   "type": "module",
   "description": "Edit and override the keyboard tab order of any web page (browser extension + userscript).",

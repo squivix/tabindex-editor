@@ -98,10 +98,13 @@ prefers, in order:
 3. a structural path (`#nearest-stable-id > div > li:nth-of-type(2) > a`), at
    most 8 segments, anchored at the closest ancestor with a stable id.
 
-If none of that matches on a later visit, `resolveEntry()` falls back to a
-fingerprint: same tag, same accessible label (`aria-label` / `placeholder` /
-`title` / `alt` / text). A text field's *value* is deliberately not part of the
-label — only push-button inputs use their value — so nothing a user typed can
+A selector is never trusted on its own. `resolveEntry()` checks each match
+against the entry's fingerprint — same tag, same accessible label (`aria-label` / `placeholder` /
+`title` / `alt` / text) — and prefers a match that is currently visible, since a
+hidden element is skipped by the browser's focus order and would drop that step
+out of your sequence. Only if nothing fingerprints does it search the page for
+the tag and label anywhere. A text field's *value* is deliberately not part of
+the label — only push-button inputs use their value — so nothing a user typed can
 end up in storage.
 
 ## Staying applied
