@@ -9,6 +9,16 @@
   'use strict';
 
   const KEY_PREFIX = 'tie:';
+  // Panel placement lives outside the per-origin records: it is a preference
+  // about the editor itself, not a rule about any one site.
+  const UI_KEY = KEY_PREFIX + 'ui';
+  // Offsets are measured from the edges named by v/h, so the panel keeps its
+  // corner when the window is resized.
+  const DEFAULT_PANEL_POS = { v: 'top', h: 'right', x: 12, y: 12 };
+  const PANEL_CORNERS = [
+    { v: 'top', h: 'right' }, { v: 'bottom', h: 'right' },
+    { v: 'bottom', h: 'left' }, { v: 'top', h: 'left' },
+  ];
   const FOCUSABLE_SELECTOR = [
     'a[href]', 'area[href]', 'button', 'input', 'select', 'textarea',
     'summary', 'iframe', 'audio[controls]', 'video[controls]', '[tabindex]',
@@ -33,6 +43,7 @@
     let candidateSet = new Set();
     let cursorIndex = 0;
     let hoveredEl = null;
+    let panelPos = { ...DEFAULT_PANEL_POS };
     let rafId = 0;
 
     // ---- UI handles -------------------------------------------------------
@@ -60,6 +71,18 @@
       const empty = !dataCache.site && Object.keys(dataCache.pages).length === 0;
       if (empty) await storage.remove(originKey());
       else await storage.set(originKey(), dataCache);
+    }
+
+    async function loadPanelPos() {
+      try {
+        const ui = await storage.get(UI_KEY);
+        if (ui && ui.panel) return { ...DEFAULT_PANEL_POS, ...ui.panel };
+      } catch {}
+      return { ...DEFAULT_PANEL_POS };
+    }
+
+    function savePanelPos() {
+      Promise.resolve(storage.set(UI_KEY, { v: 1, panel: panelPos })).catch(() => {});
     }
 
     function effectiveEntries(data) {
@@ -228,12 +251,18 @@
       :host { all: initial; }
       * { box-sizing: border-box; font-family: system-ui, -apple-system, sans-serif; }
       .panel {
-        position: fixed; top: 12px; right: 12px; z-index: 2147483647;
+        position: fixed; z-index: 2147483647;
         width: 240px; background: #1f2937; color: #f9fafb; border-radius: 10px;
         box-shadow: 0 8px 24px rgba(0,0,0,.45); padding: 12px 14px; font-size: 13px;
         line-height: 1.45;
       }
-      .panel h1 { font-size: 13px; font-weight: 700; margin: 0 0 8px; display: flex; align-items: center; gap: 6px; }
+      .panel h1 {
+        font-size: 13px; font-weight: 700; margin: -4px -6px 6px; padding: 4px 6px;
+        display: flex; align-items: center; gap: 6px; border-radius: 6px;
+        cursor: move; touch-action: none; user-select: none;
+      }
+      .panel h1:hover { background: #374151; }
+      .grip { margin-left: auto; color: #6b7280; letter-spacing: 1px; font-weight: 400; }
       .dot { width: 8px; height: 8px; border-radius: 50%; background: #34d399; display: inline-block; }
       .scope { margin: 6px 0; }
       .scope label { display: inline-flex; align-items: center; gap: 4px; margin-right: 10px; cursor: pointer; }
@@ -298,7 +327,7 @@
       panel = document.createElement('div');
       panel.className = 'panel';
       panel.innerHTML = `
-        <h1><span class="dot"></span>TabIndex Editor</h1>
+        <h1><span class="dot"></span>TabIndex Editor<span class="grip" aria-hidden="true">&#8942;&#8942;</span></h1>
         <div class="scope">Save to:
           <label><input type="radio" name="scope" value="page" tabindex="-1"> this page</label>
           <label><input type="radio" name="scope" value="site" tabindex="-1"> whole site</label>
@@ -312,8 +341,11 @@
         <div class="hints">
           <b>Tab/&#8593;&#8595;</b> move &#183; <b>Enter</b> number &#183; <b>S</b> skip<br>
           <b>P</b> scope &#183; <b>C</b> clear &#183; <b>Ctrl+Enter</b> save &#183; <b>Esc</b> cancel<br>
+          <b>M</b> move this panel (or drag its title)<br>
           <b>Click</b> number &#183; <b>Shift+click</b> skip
         </div>`;
+      applyPanelPos();
+      makeDraggable(panel.querySelector('h1'));
       countsEl = panel.querySelector('.counts');
       scopeInputs = panel.querySelectorAll('input[name="scope"]');
       for (const input of scopeInputs) {
@@ -334,6 +366,70 @@
       hoverRing.className = 'ring hover';
       shadow.appendChild(cursorRing);
       shadow.appendChild(hoverRing);
+    }
+
+    // Anchor the panel to the two edges named by panelPos, clamped so a
+    // position saved on a wide screen cannot push it off a narrow one.
+    function applyPanelPos() {
+      if (!panel) return;
+      const x = Math.max(0, Math.min(panelPos.x, window.innerWidth - 140));
+      const y = Math.max(0, Math.min(panelPos.y, window.innerHeight - 60));
+      panel.style.top = panelPos.v === 'top' ? `${y}px` : 'auto';
+      panel.style.bottom = panelPos.v === 'bottom' ? `${y}px` : 'auto';
+      panel.style.left = panelPos.h === 'left' ? `${x}px` : 'auto';
+      panel.style.right = panelPos.h === 'right' ? `${x}px` : 'auto';
+    }
+
+    function cyclePanelCorner() {
+      const at = PANEL_CORNERS.findIndex(c => c.v === panelPos.v && c.h === panelPos.h);
+      panelPos = { ...PANEL_CORNERS[(at + 1) % PANEL_CORNERS.length], x: 12, y: 12 };
+      applyPanelPos();
+      savePanelPos();
+    }
+
+    // Drag by the title bar. Pointer capture retargets the move/up events to
+    // the grip, which keeps them inside our own UI and out of the page.
+    function makeDraggable(grip) {
+      grip.addEventListener('pointerdown', (e) => {
+        if (e.button) return;
+        const start = panel.getBoundingClientRect();
+        const offX = e.clientX - start.left;
+        const offY = e.clientY - start.top;
+        try { grip.setPointerCapture(e.pointerId); } catch {}
+
+        const onMove = (ev) => {
+          const x = Math.max(0, Math.min(ev.clientX - offX, window.innerWidth - start.width));
+          const y = Math.max(0, Math.min(ev.clientY - offY, window.innerHeight - start.height));
+          panel.style.left = `${x}px`;
+          panel.style.top = `${y}px`;
+          panel.style.right = 'auto';
+          panel.style.bottom = 'auto';
+        };
+        const onUp = () => {
+          grip.removeEventListener('pointermove', onMove);
+          grip.removeEventListener('pointerup', onUp);
+          grip.removeEventListener('pointercancel', onUp);
+          // Re-anchor to whichever corner it ended up nearest, so it stays put
+          // through a resize, then remember it for next time.
+          const r = panel.getBoundingClientRect();
+          const h = (r.left + r.width / 2) < window.innerWidth / 2 ? 'left' : 'right';
+          const v = (r.top + r.height / 2) < window.innerHeight / 2 ? 'top' : 'bottom';
+          // Never store a negative offset: a window reporting a zero-sized
+          // viewport (a hidden or not-yet-laid-out tab) would otherwise poison
+          // the saved position for every later session.
+          panelPos = {
+            v, h,
+            x: Math.max(0, Math.round(h === 'left' ? r.left : window.innerWidth - r.right)),
+            y: Math.max(0, Math.round(v === 'top' ? r.top : window.innerHeight - r.bottom)),
+          };
+          applyPanelPos();
+          savePanelPos();
+        };
+        grip.addEventListener('pointermove', onMove);
+        grip.addEventListener('pointerup', onUp);
+        grip.addEventListener('pointercancel', onUp);
+        e.preventDefault();
+      });
     }
 
     function updatePanel() {
@@ -461,6 +557,7 @@
       else if (k === 's' || k === 'S') toggleMark(candidates[cursorIndex], 'skip');
       else if (k === 'p' || k === 'P') { scope = scope === 'page' ? 'site' : 'page'; updatePanel(); }
       else if (k === 'c' || k === 'C') clearMarks();
+      else if (k === 'm' || k === 'M') cyclePanelCorner();
       else if (k === 'Escape') exitEdit();
       else handled = false;
       if (handled) { e.preventDefault(); e.stopImmediatePropagation(); }
@@ -501,6 +598,7 @@
     async function enterEdit() {
       if (editing) return;
       const data = await loadOriginData();
+      panelPos = await loadPanelPos();
       editing = true;
       restoreAll(); // edit against the page's natural state
       ensureHost();

@@ -46,6 +46,7 @@ also the file to publish on Greasyfork.
    | `S` | skip the element entirely (removed from tab order) |
    | `P` | toggle save scope: this page ⟷ whole site |
    | `C` | clear all marks |
+   | `M` | move the panel to the next corner (it also drags by its title bar) |
    | `Ctrl+Enter` / `Ctrl+S` | save and exit |
    | `Esc` | cancel without saving |
 
@@ -53,6 +54,9 @@ also the file to publish on Greasyfork.
 3. Save. From then on, `Tab` on that page follows your order: numbered elements
    first (1, 2, 3…), skipped elements never, everything else in the page's
    natural order afterwards.
+
+If the panel covers something you want to pick, press `M` to send it to the next
+corner or drag it by its title bar; where you leave it is remembered.
 
 Saving with zero marks clears the rules for that scope. The extension popup can
 also clear page or site rules directly.

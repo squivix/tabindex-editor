@@ -22,13 +22,18 @@ Two things are faked, and it is worth knowing which:
   treat every element as invisible. The helper installs a fake vertical stack
   in document order. Elements with `display: none` or `hidden` still report no
   rects, so visibility filtering is exercised.
+  The panel gets a fixed 240×160 box placed by whichever edges the core
+  anchored it to, which is what makes the drag arithmetic checkable.
 - **Nothing else.** Shadow DOM, `MutationObserver`, event capture and
-  `composedPath()` are jsdom's real implementations.
+  `composedPath()` are jsdom's real implementations. The helper does keep a
+  reference to the editor's closed shadow root as it is created — the page
+  still cannot reach it, but assertions can.
 
 | File | Covers |
 |---|---|
 | [`test/core.apply.test.js`](../test/core.apply.test.js) | applying stored rules, numbering, page-vs-site precedence, the fuzzy fallback, restoring the page's own attributes, `getStatus` |
 | [`test/core.editmode.test.js`](../test/core.editmode.test.js) | picking with mouse and keyboard, every key in the keymap, save/cancel/clear, scope switching, click and key suppression, the overlay's isolation |
+| [`test/core.panel.test.js`](../test/core.panel.test.js) | moving the panel by key and by drag, clamping, persistence, and that it stays out of the site records |
 | [`test/core.selectors.test.js`](../test/core.selectors.test.js) | selector strategy and its priority order, quoting, re-resolution on a later visit, and that typed values never reach storage |
 | [`test/core.observer.test.js`](../test/core.observer.test.js) | re-render survival, winning back a tabindex the site overwrites, soft navigation, staying idle during edit mode |
 | [`test/extension.adapters.test.js`](../test/extension.adapters.test.js) | `storage.sync`/`local` merge and quota fallback, the message protocol, the background command relay |

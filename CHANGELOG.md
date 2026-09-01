@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+- The edit-mode panel can be moved: `M` cycles it through the four corners and
+  its title bar drags it anywhere. It used to sit fixed in the top-right corner,
+  hiding elements you might want to pick. Its position is remembered across
+  sessions, separately from any site's rules.
+
 ## 0.1.0 — 2026-09-01
 
 First working version.

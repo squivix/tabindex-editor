@@ -60,6 +60,12 @@ One record per origin, under the key `tie:<origin>`:
 }
 ```
 
+Panel placement is deliberately *not* part of this record. It is a preference
+about the editor, not about any site, so it lives alone under `tie:ui` as
+`{ v: 1, panel: { v, h, x, y } }` — the corner it is anchored to plus the offset
+from those two edges, which keeps it in place across window resizes. Clearing a
+site's rules leaves it untouched.
+
 Page rules win over site rules; there is no merging between the two scopes.
 Order in the array *is* the tab order. Deleting the last rule deletes the whole
 record rather than leaving an empty husk behind.
@@ -118,6 +124,12 @@ constructed stylesheets, so site CSS cannot restyle it, a site's CSP cannot
 block it, and the page's own scripts cannot query it. Its controls are
 `tabindex="-1"` and, being in a closed root, are invisible to the picker's own
 candidate scan.
+
+The panel would otherwise sit on top of whatever the site put in its top-right
+corner, so it moves: `M` cycles it through the four corners, and its title bar
+drags it anywhere, re-anchoring on release to whichever corner it landed nearest.
+Offsets are clamped on both write and read, so neither a smaller screen nor a
+window reporting a zero-sized viewport can strand it off-screen.
 
 Badges and rings are positioned from a `requestAnimationFrame` loop against
 `getBoundingClientRect()` rather than by wrapping elements, so nothing about the

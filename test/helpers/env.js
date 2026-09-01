@@ -64,16 +64,43 @@ export function originData({ pages = {}, site = null, ts = 1 } = {}) {
   return { v: 1, ts, site, pages };
 }
 
+// The editor's UI lives in a *closed* shadow root, which is the point — the page
+// cannot reach it. Tests can, by remembering the roots as they are created.
+const shadowRoots = new WeakMap();
+
+function captureShadowRoots(window) {
+  const attach = window.Element.prototype.attachShadow;
+  window.Element.prototype.attachShadow = function (init) {
+    const root = attach.call(this, init);
+    shadowRoots.set(this, root);
+    return root;
+  };
+}
+
 // jsdom has no layout: every rect is 0x0 and getClientRects() is empty, which
 // would make the core treat every element as invisible. Fake a vertical stack
 // in document order so rects are distinct and stable.
 function stubLayout(window) {
-  const rectOf = (el) => {
-    const order = [...el.ownerDocument.querySelectorAll('*')].indexOf(el);
-    const top = Math.max(0, order) * 24;
-    const r = { x: 8, y: top, left: 8, top, width: 120, height: 20, right: 128, bottom: top + 20 };
+  const box = (left, top, width, height) => {
+    const r = { x: left, y: top, left, top, width, height, right: left + width, bottom: top + height };
     r.toJSON = () => r;
     return r;
+  };
+  // The panel is `position: fixed` and sized by a stylesheet jsdom will not
+  // apply, so give it a fixed box placed by whichever edges the core anchored
+  // it to. That is what makes the drag arithmetic testable.
+  const panelBox = (el) => {
+    const num = (v) => (v && v !== 'auto' ? parseFloat(v) : null);
+    const w = 240, h = 160;
+    const right = num(el.style.right), bottom = num(el.style.bottom);
+    const left = num(el.style.left) ?? (right === null ? 0 : window.innerWidth - right - w);
+    const top = num(el.style.top) ?? (bottom === null ? 0 : window.innerHeight - bottom - h);
+    return box(left, top, w, h);
+  };
+  const rectOf = (el) => {
+    if (el.classList && el.classList.contains('panel')) return panelBox(el);
+    const order = [...el.ownerDocument.querySelectorAll('*')].indexOf(el);
+    return box(8, Math.max(0, order) * 24, 120, 20);
   };
   const hidden = (el) => {
     if (!el.isConnected || el.hidden) return true;
@@ -81,7 +108,7 @@ function stubLayout(window) {
     return st.display === 'none';
   };
   window.Element.prototype.getBoundingClientRect = function () {
-    return hidden(this) ? { x: 0, y: 0, left: 0, top: 0, width: 0, height: 0, right: 0, bottom: 0, toJSON: () => ({}) } : rectOf(this);
+    return hidden(this) ? box(0, 0, 0, 0) : rectOf(this);
   };
   window.Element.prototype.getClientRects = function () {
     return hidden(this) ? [] : [rectOf(this)];
@@ -95,6 +122,7 @@ export function createPage({ html = FORM_PAGE, url = PAGE_URL, storage = memoryS
     url, pretendToBeVisual: true, runScripts: 'outside-only',
   });
   const { window } = dom;
+  captureShadowRoots(window);
   stubLayout(window);
   window.eval(CORE_SRC);
 
@@ -106,6 +134,23 @@ export function createPage({ html = FORM_PAGE, url = PAGE_URL, storage = memoryS
     editor: window.__TabIndexEditorCore(storage),
 
     $: (sel) => window.document.querySelector(sel),
+    /** The editor's own UI, reachable only through the test-side capture above. */
+    shadow: () => shadowRoots.get(env.$('[data-tabindex-editor]')) ?? null,
+    panel: () => env.shadow()?.querySelector('.panel') ?? null,
+    /** Where the panel is pinned right now, as four CSS edge values. */
+    panelEdges() {
+      const { top, right, bottom, left } = env.panel().style;
+      return { top, right, bottom, left };
+    },
+    drag(from, to) {
+      const grip = env.panel().querySelector('h1');
+      const at = (type, x, y) => grip.dispatchEvent(new window.MouseEvent(type, {
+        bubbles: true, cancelable: true, composed: true, button: 0, clientX: x, clientY: y,
+      }));
+      at('pointerdown', from[0], from[1]);
+      at('pointermove', to[0], to[1]);
+      at('pointerup', to[0], to[1]);
+    },
     tabindex(sel) {
       const el = env.$(sel);
       return el ? el.getAttribute('tabindex') : undefined;
