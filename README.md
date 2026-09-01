@@ -57,6 +57,13 @@ also the file to publish on Greasyfork.
    first (1, 2, 3…), skipped elements never, everything else in the page's
    natural order afterwards.
 
+Many sites focus something themselves on load — Google puts the cursor in its
+search box — which would otherwise mean your first `Tab` continues from *there*
+rather than starting at your first pick. It doesn't: the first `Tab` on a page
+with rules goes to your number 1, while the site's autofocus is left in place so
+you can still just start typing. Type, click, or press `Shift+Tab` first and the
+editor stays out of the way entirely.
+
 If the panel covers something you want to pick, press `M` to send it to the next
 corner or drag it by its title bar; where you leave it is remembered.
 

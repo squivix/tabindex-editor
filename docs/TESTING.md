@@ -35,6 +35,7 @@ Two things are faked, and it is worth knowing which:
 | [`test/core.editmode.test.js`](../test/core.editmode.test.js) | picking with mouse and keyboard, every key in the keymap, save/cancel/clear, scope switching, click and key suppression, the overlay's isolation |
 | [`test/core.panel.test.js`](../test/core.panel.test.js) | moving the panel by key and by drag, clamping, persistence, and that it stays out of the site records |
 | [`test/core.selectors.test.js`](../test/core.selectors.test.js) | selector strategy and its priority order, quoting, re-resolution on a later visit, and that typed values never reach storage |
+| [`test/core.firsttab.test.js`](../test/core.firsttab.test.js) | the first `Tab` landing on pick #1 despite a site's autofocus, and every way that interception is meant to stand down |
 | [`test/core.observer.test.js`](../test/core.observer.test.js) | re-render survival, winning back a tabindex the site overwrites, soft navigation, staying idle during edit mode |
 | [`test/extension.adapters.test.js`](../test/extension.adapters.test.js) | `storage.sync`/`local` merge and quota fallback, the message protocol, the background command relay |
 | [`test/extension.popup.test.js`](../test/extension.popup.test.js) | what the popup renders for a page and what it sends back |

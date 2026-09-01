@@ -34,6 +34,12 @@
     const selfWrites = new Set();
     let observer = null;
     let reapplyTimer = null;
+    // Sites often focus something themselves on load (Google's search box, say).
+    // That is usually welcome, but it means the first Tab continues from there
+    // instead of starting at the order you defined. So the first Tab press on a
+    // page with rules goes to your first pick; everything after behaves normally.
+    let firstOrdered = null;
+    let awaitingFirstTab = false;
 
     // ---- edit-mode state --------------------------------------------------
     let editing = false;
@@ -214,13 +220,16 @@
 
     function reapply(entries) {
       currentEntries = entries;
+      firstOrdered = null;
       const desired = new Map();
       if (entries) {
         let n = 1;
         for (const en of entries) {
           const el = resolveEntry(en);
           if (!el || desired.has(el)) continue;
-          desired.set(el, en.action === 'skip' ? '-1' : String(n++));
+          const val = en.action === 'skip' ? '-1' : String(n++);
+          if (val === '1') firstOrdered = el;
+          desired.set(el, val);
         }
       }
       for (const [el, orig] of Array.from(appliedOriginal)) {
@@ -248,6 +257,23 @@
     async function applySaved() {
       const data = await loadOriginData();
       reapply(effectiveEntries(data));
+      awaitingFirstTab = !!firstOrdered;
+    }
+
+    // Anything the user does other than that first Tab means they have taken
+    // charge of the focus themselves — typing in the box the site focused, or
+    // clicking somewhere — so we stay out of the way from then on.
+    function onGlobalKeyDown(e) {
+      if (editing || !awaitingFirstTab) return;
+      if (e.key !== 'Tab' || e.shiftKey || e.ctrlKey || e.altKey || e.metaKey) {
+        awaitingFirstTab = false;
+        return;
+      }
+      awaitingFirstTab = false;
+      if (!firstOrdered || !firstOrdered.isConnected || !isVisible(firstOrdered)) return;
+      if (document.activeElement === firstOrdered) return;
+      e.preventDefault();
+      try { firstOrdered.focus(); } catch {}
     }
 
     function startObserver() {
@@ -694,6 +720,8 @@
       init() {
         applySaved();
         startObserver();
+        window.addEventListener('keydown', onGlobalKeyDown, true);
+        window.addEventListener('pointerdown', () => { awaitingFirstTab = false; }, true);
         window.addEventListener('popstate', () => { if (!editing) applySaved(); });
         window.addEventListener('hashchange', () => { if (!editing) applySaved(); });
       },

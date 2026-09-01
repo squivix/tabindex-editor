@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.3.0 — 2026-09-01
+
+- The first `Tab` press on a page with rules now goes to your first pick,
+  instead of continuing from wherever the site put focus. Pages that focus
+  their own search box on load (Google, among many) meant your order only
+  started applying from whatever came after that box. The site's autofocus is
+  left alone, so you can still just type. Typing, clicking or pressing
+  `Shift+Tab` first hands control straight back, and every later `Tab` behaves
+  normally.
+
 ## 0.2.1 — 2026-09-01
 
 Fixes for rules landing on the wrong element after a page re-renders, found

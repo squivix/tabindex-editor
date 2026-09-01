@@ -107,6 +107,20 @@ the tag and label anywhere. A text field's *value* is deliberately not part of
 the label — only push-button inputs use their value — so nothing a user typed can
 end up in storage.
 
+## The first Tab press
+
+Positive `tabindex` decides the *order* of the sequence, not where in it you
+start: `Tab` always moves on from whatever currently has focus. Sites that
+autofocus a field on load therefore drop you into the middle of your own order.
+
+So while rules are applied, the first `Tab` on the page is intercepted once and
+focus is moved to the element numbered 1. The site's autofocus is deliberately
+left alone — it is usually what the user wants — and any other interaction
+(typing, a pointer press, `Shift+Tab`, a modified `Tab`) disarms the
+interception, on the principle that the moment a user directs focus themselves
+the editor should stop steering. It re-arms whenever rules are applied afresh:
+a load, a soft navigation, or leaving edit mode.
+
 ## Staying applied
 
 A `MutationObserver` on `documentElement` (childList + `tabindex` attribute)
