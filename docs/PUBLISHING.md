@@ -46,8 +46,19 @@ readable as-is. If asked, point reviewers at
 > use, number them in the order you want, skip the ones you never touch — saved
 > per page or per site and applied on every visit. Browse mouse-free your way.
 
-**Category**: Accessibility · **Tags**: accessibility, keyboard, tab order,
-navigation, productivity
+**Category**: Tabs. AMO's Firefox extension categories have no Accessibility
+entry, and nothing else in the list is closer — "Tabs" is about browser tabs
+rather than the Tab key, but it is where people searching "tab" land. The honest
+alternative is *My add-on doesn't fit into any of the categories*, which costs
+all category browsing.
+
+**Experimental**: no. It is tested and functional; the flag suppresses the
+listing in search and recommendations.
+
+**Support email**: leave blank — AMO publishes it. The support website below
+satisfies the requirement on its own.
+
+**Support website**: https://github.com/squivix/tabindex-editor/issues
 
 **Description**
 
