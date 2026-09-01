@@ -7,6 +7,8 @@
 // @license      MIT
 // @homepageURL  https://github.com/squivix/tabindex-editor
 // @supportURL   https://github.com/squivix/tabindex-editor/issues
+// @downloadURL  https://github.com/squivix/tabindex-editor/releases/latest/download/tabindex-editor.user.js
+// @updateURL    https://github.com/squivix/tabindex-editor/releases/latest/download/tabindex-editor.user.js
 // @match        *://*/*
 // @grant        GM.getValue
 // @grant        GM.setValue
